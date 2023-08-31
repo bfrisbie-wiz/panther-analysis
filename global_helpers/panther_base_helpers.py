@@ -312,7 +312,7 @@ def deep_get(dictionary: dict, *keys, default=None):
 
 # pylint: disable=too-complex,too-many-return-statements
 def deep_walk(
-    obj: Optional[Any], *keys: str, default: str = None, return_val: str = "all"
+    obj: Optional[Any], *keys: str, default: Optional[str] = None, return_val: str = "all"
 ) -> Union[Optional[Any], Optional[List[Any]]]:
     """Safely retrieve a value stored in complex dictionary structure
 
@@ -335,7 +335,7 @@ def deep_walk(
     def _empty_list(sub_obj: Any):
         return (
             all(_empty_list(next_obj) for next_obj in sub_obj)
-            if isinstance(sub_obj, list)
+            if isinstance(sub_obj, Sequence) and not isinstance(sub_obj, str)
             else False
         )
 
@@ -343,7 +343,7 @@ def deep_walk(
         return default if _empty_list(obj) else obj
 
     current_key = keys[0]
-    found = OrderedDict()
+    found: OrderedDict = OrderedDict()
 
     if isinstance(obj, Mapping):
         next_key = obj.get(current_key, None)
@@ -356,19 +356,19 @@ def deep_walk(
         for item in obj:
             value = deep_walk(item, *keys, default=default, return_val=return_val)
             if value is not None:
-                if isinstance(value, list):
+                if isinstance(value, Sequence) and not isinstance(value, str):
                     for sub_item in value:
                         found[sub_item] = None
                 else:
                     found[value] = None
 
-    found = list(found.keys())
-    if not found:
+    found_list: list[Any] = list(found.keys())
+    if not found_list:
         return default
     return {
-        "first": found[0],
-        "last": found[-1],
-        "all": found[0] if len(found) == 1 else found,
+        "first": found_list[0],
+        "last": found_list[-1],
+        "all": found_list[0] if len(found_list) == 1 else found_list,
     }.get(return_val, "all")
 
 
